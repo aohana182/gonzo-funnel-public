@@ -1,0 +1,13 @@
+.env
+*.sqlite
+logs/
+__pycache__/
+.venv/
+*.pyc
+*.pyo
+.pytest_cache/
+dist/
+*.egg-info/
+memory.md
+HANDOFF.md
+spec/
