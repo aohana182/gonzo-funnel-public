@@ -17,7 +17,7 @@ _EXPECTED_VCS = {
     "url":            "url",
     "country":        "singleLineText",
     "thesis_summary": "multilineText",
-    "stage_focus":    "multipleSelects",
+    "stage_focus":    "multilineText",
     "ticket_size":    "singleLineText",
     "partners":       "multilineText",
     "score":          "number",

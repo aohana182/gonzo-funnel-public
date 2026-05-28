@@ -1,226 +1,117 @@
-# gonzo-funnel
+# gonzo-funnel — Icegate VC pipeline
 
-**Raising a round? gonzo-funnel handles the research half of VC prospecting.**
+Weekly automated pipeline: finds VCs, researches them, scores against the Icegate thesis, writes outreach drafts. Output lands in Airtable. Nothing is sent automatically.
 
-Every week it scouts new funds, reads their websites and portfolio pages, scores each one against your thesis, and writes personalised cold outreach for the ones worth approaching. Output lands in Airtable for review. Nothing is sent without you.
-
-```
-Your thesis + company context
-        │
-        ▼
-  scout ──► researcher ──► scorer ──► drafter
-  (finds VCs)  (builds dossier)  (scores 0–25)  (writes email + LinkedIn)
-        │                                               │
-        └───────────────── Airtable ◄──────────────────┘
-                        (you review, you send)
-```
+**Status:** Live as of 2026-05-28. 102 tests passing. First real run pending.
 
 ---
 
-## Why this exists
+## Run it
 
-Finding the right VCs is repetitive: search Google, scan portfolio pages, check stage and ticket size, write a personalised email, repeat 50 times. Most of that is pattern-matching that a pipeline can do faster and more consistently than a human.
-
-gonzo-funnel doesn't replace the relationship. It replaces the spreadsheet.
-
----
-
-## What it does
-
-**Scout** searches the web for VC funds matching your thesis and returns a ranked list of candidates.
-
-**Researcher** reads each fund's website, portfolio, and partner pages — up to several URL fetches per VC — and builds a structured dossier.
-
-**Scorer** reads the dossier against your thesis and scores the fit on 5 dimensions (0–5 each, 25 total). Only VCs scoring 17+ proceed to drafting.
-
-**Drafter** writes a personalised email and LinkedIn DM for each qualifying VC, using your founder bio and voice rules.
-
-Everything lands in Airtable. You read the drafts, edit what needs editing, and send what's worth sending.
-
----
-
-## Key properties
-
-- **Spec-driven** — your company overview, thesis, and founder voice live in local markdown files that you write once. They never leave your machine.
-- **Model-agnostic** — works with Anthropic, OpenAI, OpenRouter, or any OpenAI-compatible endpoint. Mix providers per role.
-- **Human in the loop** — agents write to Airtable as "Draft" status. Nothing is sent without a human decision.
-- **Cheap to run** — ~$0.54 for 10 VCs end-to-end at Sonnet 4.6 prices (~$2/month running weekly).
-- **Staleness tracking** — SQLite cache records when each VC was last researched. Re-research on a schedule with `--refresh-older-than`.
-- **Observable** — every LLM call logged to JSONL. Optional Langfuse tracing for deeper inspection.
-
----
-
-## Quick start
-
-**1. Install**
-
-```bash
-git clone https://github.com/aohana182/gonzo-funnel
-cd gonzo-funnel
-uv sync
-```
-
-**2. Configure API keys**
-
-```bash
-cp .env.example .env
-```
-
-Minimum to run: one LLM key + one search key + Airtable credentials. See [Configuration](#configuration) for the full table.
-
-**3. Fill your spec files**
-
-Copy the `.example` files in `spec/` and fill them in:
-
-```bash
-cp spec/company.md.example spec/company.md
-cp spec/thesis.md.example spec/thesis.md
-cp spec/exclusions.md.example spec/exclusions.md
-cp spec/bio.md.example spec/bio.md
-```
-
-`spec/` is gitignored — your fundraise context stays local.
-
-**4. Set up Airtable**
-
-Create the VCs and Drafts tables (field list in [`docs/architecture.md`](docs/architecture.md)), then verify:
-
-```bash
-python setup_airtable.py
-```
-
-**5. Dry run first**
-
-```bash
-uv run python -m cli --dry-run --limit 3
-```
-
-No Airtable writes, no email. Confirms the pipeline runs end-to-end and shows a cost estimate.
-
-**6. Real run**
-
-```bash
+```powershell
+$env:Path = "C:\Users\avioh\.local\bin;$env:Path"
+cd C:\Users\avioh\gonzo-funnel
 uv run python -m cli --limit 10
 ```
 
+Dry run first (no Airtable writes, no email):
+
+```powershell
+uv run python -m cli --dry-run --limit 10
+```
+
+After a run, check Airtable. New VCs appear in VC_TABLE; qualifying drafts appear in DRAFTS with status "Draft".
+
 ---
 
-## Configuration
+## Key numbers
 
-```bash
-cp .env.example .env
-```
-
-| Category | Key variables |
+| Thing | Value |
 |---|---|
-| LLM (per role) | `{ROLE}_PROVIDER`, `{ROLE}_MODEL`, `{ROLE}_API_KEY` — roles: SCOUT, RESEARCHER, SCORER, DRAFTER |
-| Search | `SEARCH_PROVIDER` (`brave`/`serper`/`tavily`), matching API key |
-| Airtable | `AIRTABLE_PAT`, `AIRTABLE_BASE_ID` |
-| Email digest | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `DIGEST_FROM`, `DIGEST_TO` |
-| Budget cap | `MAX_COST_USD` — halt the run if spend exceeds this |
-| Concurrency | `MAX_CONCURRENCY` (default 4) |
-
-Supported LLM providers: `anthropic`, `openai`, `openrouter`, `openai_compatible` (Ollama, vLLM, etc.).
-
-Validate before running:
-
-```bash
-uv run python -m cli --config-check
-```
+| Scoring threshold | 17/25 — only VCs at or above this get drafts |
+| Cost per 10 VCs | ~$0.54 (Sonnet 4.6 via OpenRouter) |
+| Search rate limit | 1 req/sec — Brave free tier, automatically enforced |
+| Concurrency | 4 parallel VC pipelines |
+| Scorer cache | SQLite — repeated runs on the same VC cost $0 for scoring |
 
 ---
 
 ## Spec files
 
-The four files in `spec/` are the only project-specific input. Everything else is generic infrastructure.
+All agent context lives in `spec/`. These files are gitignored and never leave this machine.
 
-| File | What to write |
-|---|---|
-| `company.md` | What you built, for whom, why now, the ask |
-| `thesis.md` | What a matching VC looks like — sector focus, stage, ticket size, geography. Also defines the 5 scoring dimensions. |
-| `exclusions.md` | VCs to never surface — already contacted, wrong fit, competitor investors |
-| `bio.md` | Founder bio and voice rules — tone, what to lead with, signature |
-
-Start from the `.example` files in `spec/`.
-
----
-
-## CLI reference
-
-```bash
-uv run python -m cli [flags]
-```
-
-| Flag | Default | What it does |
+| File | What's in it | When to update |
 |---|---|---|
-| `--limit N` | 10 | Max VCs to research per run |
-| `--dry-run` | off | No Airtable writes, no email |
-| `--only ROLE` | — | Run one agent for debugging (`scout`, `researcher`, `scorer`, `drafter`) |
-| `--vc NAME` | — | VC name, required with `--only researcher/scorer/drafter` |
-| `--refresh-older-than DAYS` | — | Re-research VCs last updated more than N days ago |
-| `--no-langfuse` | off | Disable Langfuse tracing for this run |
-| `--config-check` | — | Validate env and exit |
-
-Exit codes: `0` success / budget ceiling · `2` config error · `3` partial failure · `4` fatal failure
+| `spec/icegate.md` | Company overview, tech, market, team, the ask | When the pitch changes |
+| `spec/thesis.md` | Matching VC profile + 5 scoring dimension definitions | When targeting criteria change |
+| `spec/exclusions.md` | VCs to skip — already contacted, wrong fit | After each outreach wave |
+| `spec/bio.md` | Founder bio and voice rules for drafts | Rarely |
 
 ---
 
-## Cost
+## Airtable
 
-At the end of every run, a cost table prints to stdout:
+Base: `apperqHgWUi0qBkMg`
 
-```
-Role         Provider     Model              Calls   Tokens In   Tokens Out   Cost USD
-scout        openrouter   claude-sonnet-4-6  1       3,200       1,100        0.027
-researcher   openrouter   claude-sonnet-4-6  10      40,000      12,000       0.300
-scorer       openrouter   claude-sonnet-4-6  10      15,000      3,500        0.097
-drafter      openrouter   claude-sonnet-4-6  7       9,000       5,600        0.111
-──────────────────────────────────────────────────────────────────────────────────
-TOTAL                                        28      67,200      22,200       0.535
-```
+**VC_TABLE** fields: `name`, `url`, `country`, `thesis_summary`, `stage_focus`, `ticket_size`, `partners`, `score`, `score_breakdown`, `status`, `last_updated`, `dossier`, `sources`, `notes`
 
-Assumes 7 of 10 VCs pass the scoring threshold. Scorer results are cached — re-runs on already-researched VCs cost $0 for that stage.
+**DRAFTS** fields: `VC` (link), `partner_name`, `channel`, `subject`, `body`, `status`, `created`, `sent_at`
 
-Full cost breakdown: [`docs/cost_model.md`](docs/cost_model.md)
+`notes` and `sent_at` are operator-only — agents never touch them.
 
 ---
 
-## Observability
+## Common commands
 
-**JSONL logs** are always on. One file per run at `logs/{run_id}.jsonl`. Every LLM call, token count, and cost is recorded.
+```powershell
+# Verify setup
+uv run python -m cli --config-check
+uv run python setup_airtable.py
 
-**Langfuse** is optional. Self-hosted via the included `docker-compose.yml`:
+# Debug one agent
+uv run python -m cli --only scout
+uv run python -m cli --only researcher --vc "Sequoia Capital"
+uv run python -m cli --only scorer --vc "Sequoia Capital"
+uv run python -m cli --only drafter --vc "Sequoia Capital"
 
-```bash
-docker compose up -d   # starts Langfuse at localhost:3000
-```
+# Re-research VCs older than 30 days
+uv run python -m cli --refresh-older-than 30
 
-Then set in `.env`:
-```
-LANGFUSE_ENABLED=true
-LANGFUSE_HOST=http://localhost:3000
-LANGFUSE_PUBLIC_KEY=...
-LANGFUSE_SECRET_KEY=...
+# Run tests
+uv run python -m pytest tests/ -q
 ```
 
 ---
 
-## Outbound connections
+## Logs and cost
 
-The pipeline connects only to the APIs you configure:
+Every run writes a JSONL file to `logs/{run_id}.jsonl`. Cost table prints to stdout at the end of each run.
 
-- LLM provider (Anthropic / OpenAI / OpenRouter / self-hosted)
-- Search provider (Brave / Serper / Tavily)
-- `api.airtable.com`
-- Langfuse (self-hosted, local only)
-- SMTP server of your choice
+Optional: Langfuse traces at `localhost:3000` — start with `docker compose up -d`.
 
-No telemetry elsewhere.
+---
+
+## Two-repo setup
+
+Changes go in this repo. To publish to the public repo:
+
+```powershell
+Copy-Item "C:\Users\avioh\gonzo-funnel\<changed>" "C:\Users\avioh\gonzo-funnel-public\<changed>" -Recurse -Force
+cd C:\Users\avioh\gonzo-funnel-public
+git add .
+git commit -m "sync: <what changed>"
+git push
+```
+
+Never sync: `spec/`, `docs/PRD.md`, `docs/PLAN.md`, `memory.md`, `HANDOFF.md`.
 
 ---
 
 ## Docs
 
-- [`docs/architecture.md`](docs/architecture.md) — full system diagram, component map, Airtable field reference
-- [`docs/model_routing.md`](docs/model_routing.md) — per-role model recommendations and provider compatibility
-- [`docs/cost_model.md`](docs/cost_model.md) — cost estimates, budget levers, search API pricing
+- [`docs/architecture.md`](docs/architecture.md) — pipeline diagram, component map
+- [`docs/model_routing.md`](docs/model_routing.md) — per-role model config
+- [`docs/cost_model.md`](docs/cost_model.md) — cost estimates and budget levers
+- [`docs/PRD.md`](docs/PRD.md) — full product spec
+- `memory.md` — session decisions, deferred items, open questions
+- `HANDOFF.md` — current state, environment, traps to avoid

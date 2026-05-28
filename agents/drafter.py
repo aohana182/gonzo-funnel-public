@@ -39,7 +39,7 @@ class DrafterAgent(BaseAgent):
             "- Reference one specific signal from the dossier: a portfolio company, a recent investment, "
             "or a direct quote from their stated thesis.\n"
             "- Factual register only. No fluff. No em-dashes. No AI-sounding phrases.\n"
-            "- channel must be exactly 'Email' or 'LinkedIn DM'."
+            "- channel must be exactly 'email' or 'linkedin'."
         )
 
     def run(self, dossier: VCDossier, score: Score, run_id: str) -> Drafts | None:
