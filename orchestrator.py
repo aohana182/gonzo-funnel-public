@@ -15,6 +15,7 @@ from observability.jsonl_logger import JsonlLogger, make_run_id
 from observability.langfuse_wrapper import LangfuseWrapper
 from search.factory import get_client as get_search_client
 from storage.airtable import AirtableStorage
+from storage.results_log import ResultsLog
 from storage.sqlite_cache import SqliteCache
 
 _DEFAULT_CONCURRENCY = 4
@@ -110,6 +111,7 @@ async def run_pipeline(
     drafter = DrafterAgent(client=drafter_client, logger=logger, langfuse=langfuse)
 
     storage = None if dry_run else AirtableStorage(cache=cache)
+    results_log = ResultsLog(run_id=run_id, log_dir=_log_dir)
 
     if not dry_run:
         cache.start_run(run_id)
@@ -150,23 +152,31 @@ async def run_pipeline(
         drafts: Drafts | None = drafter.run(dossier, score, run_id=run_id)
 
         drafts_count = len(drafts.drafts) if drafts else 0
+
+        vc_fields = {
+            "name": dossier.name,
+            "url": dossier.url,
+            "country": dossier.country,
+            "thesis_summary": dossier.thesis_summary,
+            "stage_focus": ", ".join(dossier.stage_focus),
+            "ticket_size": dossier.ticket_size,
+            "partners": ", ".join(dossier.partners),
+            "score": score.total,
+            "score_breakdown": "\n".join(
+                f"{d.name}: {d.score}/5 — {d.rationale}" for d in score.dimensions
+            ),
+            "dossier": f"{dossier.thesis_summary}\n\n{dossier.score_preview}",
+            "sources": "\n".join(dossier.sources),
+            "status": "draft_ready" if score.go else "researched",
+        }
+        draft_fields_list = [
+            {"partner_name": d.partner_name, "channel": d.channel,
+             "subject": d.subject, "body": d.body}
+            for d in (drafts.drafts if drafts else [])
+        ]
+        results_log.append(vc_fields=vc_fields, draft_fields=draft_fields_list)
+
         if storage is not None:
-            vc_fields = {
-                "name": dossier.name,
-                "url": dossier.url,
-                "country": dossier.country,
-                "thesis_summary": dossier.thesis_summary,
-                "stage_focus": ", ".join(dossier.stage_focus),
-                "ticket_size": dossier.ticket_size,
-                "partners": ", ".join(dossier.partners),
-                "score": score.total,
-                "score_breakdown": "\n".join(
-                    f"{d.name}: {d.score}/5 — {d.rationale}" for d in score.dimensions
-                ),
-                "dossier": f"{dossier.thesis_summary}\n\n{dossier.score_preview}",
-                "sources": "\n".join(dossier.sources),
-                "status": "Draft Ready" if score.go else "Researched",
-            }
             vc_record_id = storage.upsert_vc(vc_fields)
 
             if drafts:

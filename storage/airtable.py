@@ -72,7 +72,7 @@ class AirtableStorage:
             return existing["id"]
 
         draft_fields = _safe_fields({k: v for k, v in fields.items() if not k.startswith("_")})
-        draft_fields.setdefault("status", "Draft")
+        draft_fields.setdefault("status", "drafts")
         draft_fields.setdefault("created", _now_date())
         if vc_record_id:
             draft_fields["VC"] = [vc_record_id]

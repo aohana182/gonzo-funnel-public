@@ -2,7 +2,7 @@
 
 ## Overview
 
-Gonzo Funnel is a multi-agent pipeline that runs weekly to discover, research, score, and draft VC outreach for a fundraise.
+Gonzo Funnel is a multi-agent pipeline that runs weekly to discover, research, score, and draft VC outreach for the MAYAK Oy fundraise.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -70,7 +70,7 @@ gonzo-funnel/
     langfuse_wrapper.py  Optional Langfuse tracing (self-hosted).
     cost.py              Per-model price table. calculate_cost() → USD.
 
-  spec/                  Fundraise context — gitignored, human-maintained (company.md, thesis.md, exclusions.md, bio.md).
+  spec/                  Fundraise context — human-maintained, never auto-generated (icegate.md, thesis.md, exclusions.md, bio.md).
   systemd/               gonzo-funnel.service + .timer for Linux deployment.
   docker-compose.yml     Langfuse v3 + Postgres 15 + ClickHouse 24 (local only).
 ```
@@ -80,7 +80,7 @@ gonzo-funnel/
 ## Data Flow
 
 ```
-spec/company.md + spec/thesis.md + spec/exclusions.md
+spec/icegate.md + spec/thesis.md + spec/exclusions.md
         │
         ▼
   ScoutAgent  ──── search API ──→  [VCCandidate, ...]

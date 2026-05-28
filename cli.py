@@ -106,6 +106,45 @@ def _run_only(only: str, vc_name: str | None, run_id: str) -> None:
         console.print_json(drafts.model_dump_json(indent=2))
 
 
+def _push_run(run_id: str) -> int:
+    from rich.console import Console
+
+    from storage.airtable import AirtableStorage
+    from storage.results_log import ResultsLog
+    from storage.sqlite_cache import SqliteCache
+
+    console = Console()
+    log_dir = os.environ.get("JSONL_LOG_DIR", "./logs")
+    entries = ResultsLog(run_id=run_id, log_dir=log_dir).read_all()
+
+    if not entries:
+        console.print(f"[yellow]No results file found for run {run_id!r}. "
+                      f"Expected: {log_dir}/{run_id}.results.jsonl[/yellow]")
+        return 2
+
+    cache = SqliteCache(path=os.environ.get("SQLITE_CACHE_PATH", "./cache.sqlite"))
+    storage = AirtableStorage(cache=cache)
+    pushed = 0
+    errors: list[str] = []
+
+    for entry in entries:
+        name = entry["vc"].get("name", "?")
+        try:
+            vc_record_id = storage.upsert_vc(entry["vc"])
+            for draft in entry.get("drafts", []):
+                storage.upsert_draft({"_vc_record_id": vc_record_id, **draft})
+            cache.add_vc_seen(name, entry["vc"].get("url") or None)
+            cache.update_last_researched(name)
+            pushed += 1
+            console.print(f"[green]OK[/green] {name}")
+        except Exception as e:
+            errors.append(f"{name}: {e}")
+            console.print(f"[red]FAIL[/red] {name}: {e}")
+
+    console.print(f"\nPushed: {pushed} | Errors: {len(errors)}")
+    return 0 if not errors else 3
+
+
 def main() -> None:
     load_dotenv()
 
@@ -127,10 +166,15 @@ def main() -> None:
                         help="Disable Langfuse for this run")
     parser.add_argument("--config-check", action="store_true",
                         help="Validate env config and exit")
+    parser.add_argument("--push-run", metavar="RUN_ID",
+                        help="Push a saved results file to Airtable without re-running LLMs")
     args = parser.parse_args()
 
     if args.config_check:
         sys.exit(_config_check())
+
+    if args.push_run:
+        sys.exit(_push_run(args.push_run))
 
     if args.no_langfuse:
         os.environ["LANGFUSE_ENABLED"] = "false"
