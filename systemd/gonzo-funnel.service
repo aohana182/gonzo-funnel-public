@@ -1,0 +1,16 @@
+[Unit]
+Description=Gonzo Funnel — VC investor pipeline
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/gonzo-funnel
+ExecStart=%h/.local/bin/uv run python -m cli --limit 10
+EnvironmentFile=%h/gonzo-funnel/.env
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gonzo-funnel
+
+[Install]
+WantedBy=default.target

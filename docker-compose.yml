@@ -1,0 +1,52 @@
+version: "3.8"
+
+# Langfuse v3 self-hosted — binds to 127.0.0.1 only.
+# Access via Tailscale SSH tunnel or Tailscale Funnel. Never expose publicly.
+#
+# First run:
+#   docker compose up -d
+#   Visit http://localhost:3000 and create an account.
+#   Copy the public/secret keys into .env.
+
+services:
+  langfuse:
+    image: langfuse/langfuse:3
+    depends_on:
+      - postgres
+      - clickhouse
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse@postgres:5432/langfuse
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: langfuse
+      CLICKHOUSE_PASSWORD: langfuse
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-changeme_in_production}
+      SALT: ${LANGFUSE_SALT:-changeme_in_production}
+      TELEMETRY_ENABLED: "false"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse_postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24
+    environment:
+      CLICKHOUSE_USER: langfuse
+      CLICKHOUSE_PASSWORD: langfuse
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - langfuse_clickhouse:/var/lib/clickhouse
+    restart: unless-stopped
+
+volumes:
+  langfuse_postgres:
+  langfuse_clickhouse:
