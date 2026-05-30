@@ -12,11 +12,13 @@ from observability.langfuse_wrapper import LangfuseWrapper
 
 def _make_agent():
     client = MagicMock()
+    search = MagicMock()
+    search.search.return_value = []
     logger = MagicMock(spec=JsonlLogger)
     langfuse = MagicMock(spec=LangfuseWrapper)
     langfuse.span.return_value = MagicMock()
     with patch("agents.scout.read_spec", return_value="[test content]"):
-        agent = ScoutAgent(client=client, logger=logger, langfuse=langfuse)
+        agent = ScoutAgent(client=client, search=search, logger=logger, langfuse=langfuse)
     return agent, client, logger
 
 
