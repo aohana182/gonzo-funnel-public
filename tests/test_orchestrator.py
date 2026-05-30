@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from agents.drafter import Draft, Drafts
-from agents.researcher import Citation, VCDossier
+from agents.researcher import VCDossier
 from agents.scorer import Score, ScoreDimension
 from agents.scout import ScoutCandidate
 from models import RunResult
@@ -20,8 +20,7 @@ def _dossier(name="Accel"):
     return VCDossier(
         name=name, url=f"https://{name.lower()}.com", country="USA",
         thesis_summary="Deep tech.", stage_focus=["Seed"], ticket_size="$500K",
-        partners=["Partner A"], score_preview="Good fit.",
-        citations=[], sources=[f"https://{name.lower()}.com"],
+        partners=["Partner A"], sources=[f"https://{name.lower()}.com"],
     )
 
 

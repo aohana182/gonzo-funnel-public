@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from agents.researcher import Citation, VCDossier
+from agents.researcher import VCDossier
 from agents.scorer import Score, ScoreDimension
 from notify.email import send_digest, _smtp_configured
 from models import RunResult
@@ -29,8 +29,7 @@ def _make_dossier(name="Accel"):
     return VCDossier(
         name=name, url="https://accel.com", country="USA",
         thesis_summary="Deep tech.", stage_focus=["Seed"], ticket_size="$500K",
-        partners=["Partner A"], score_preview="Good.",
-        citations=[], sources=[],
+        partners=["Partner A"], sources=[],
     )
 
 

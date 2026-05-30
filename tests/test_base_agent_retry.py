@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from agents.base import AgentError
 from agents.scorer import Score, ScoreDimension, ScorerAgent
-from agents.researcher import VCDossier, Citation
+from agents.researcher import VCDossier
 from llm.base import LLMResponse
 from observability.jsonl_logger import JsonlLogger
 from observability.langfuse_wrapper import LangfuseWrapper
@@ -69,8 +69,7 @@ def _make_dossier():
     return VCDossier(
         name="Accel", url="https://accel.com", country="USA",
         thesis_summary="Deep tech.", stage_focus=["Seed"], ticket_size="$500K",
-        partners=["Partner A"], score_preview="Good.",
-        citations=[], sources=["https://accel.com"],
+        partners=["Partner A"], sources=["https://accel.com"],
     )
 
 

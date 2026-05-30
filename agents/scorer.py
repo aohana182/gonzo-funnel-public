@@ -92,7 +92,6 @@ class ScorerAgent(BaseAgent):
             f"Stage Focus: {', '.join(dossier.stage_focus)}\n"
             f"Ticket Size: {dossier.ticket_size}\n"
             f"Partners: {', '.join(dossier.partners)}\n"
-            f"Score Preview: {dossier.score_preview}\n"
             f"Sources: {', '.join(dossier.sources)}"
         )
         messages = [{"role": "user", "content": f"Score this VC fund:\n\n{dossier_text}"}]
