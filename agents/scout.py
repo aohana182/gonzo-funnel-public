@@ -8,11 +8,17 @@ from search.base import SearchClient
 
 _MAX_SEEN_IN_PROMPT = 200
 
+# Original 4 narrow queries saturated the internet-freedom funder pool at ~40 names (2026-05-31).
+# Expanded to 8 queries covering adjacent spaces: European foundations, press freedom, open-source security.
 _DISCOVERY_QUERIES = [
-    "internet freedom circumvention tool grant funder 2024",
-    "anti-censorship VPN grant Russia Iran China funder",
-    "OTF Open Technology Fund similar funders circumvention",
-    "digital security tool engineering grant rapid response",
+    "internet freedom circumvention VPN grant funder 2024 2025",
+    "anti-censorship technology fund Russia Iran China 2024",
+    "digital rights privacy tool grant foundation Europe",
+    "open source security tool nonprofit grant funding",
+    "press freedom journalist digital safety fund grant",
+    "tech for good privacy infrastructure grant program",
+    "US government democracy technology grant program 2024",
+    "Scandinavian Nordic digital rights development fund grant",
 ]
 
 
