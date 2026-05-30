@@ -1,15 +1,32 @@
+# Environment -- never commit real secrets
 .env
-*.sqlite
-logs/
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.sw?
+
+# Python
 __pycache__/
-.venv/
-*.pyc
+*.py[cod]
 *.pyo
-.pytest_cache/
-dist/
+.venv/
+venv/
 *.egg-info/
+dist/
+build/
+.pytest_cache/
+
+# Runtime outputs
+logs/
+*.sqlite
 memory.md
 HANDOFF.md
-spec/
-docs/PRD.md
-docs/PLAN.md
