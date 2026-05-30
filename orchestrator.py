@@ -103,7 +103,7 @@ async def run_pipeline(
     drafter_client = get_client("DRAFTER")
     search = get_search_client()
 
-    scout = ScoutAgent(client=scout_client, logger=logger, langfuse=langfuse)
+    scout = ScoutAgent(client=scout_client, search=search, logger=logger, langfuse=langfuse)
     researcher = ResearcherAgent(
         client=researcher_client, search=search, logger=logger, langfuse=langfuse
     )

@@ -68,7 +68,8 @@ def _run_only(only: str, vc_name: str | None, run_id: str) -> None:
 
     if only == "scout":
         seen = cache.get_all_seen_names()
-        scout = ScoutAgent(client=get_client("SCOUT"), logger=logger, langfuse=langfuse)
+        search = get_search_client()
+        scout = ScoutAgent(client=get_client("SCOUT"), search=search, logger=logger, langfuse=langfuse)
         candidates = scout.run(run_id=run_id, seen_names=seen, limit=10)
         console.print_json(json.dumps([c.model_dump() for c in candidates]))
         return
