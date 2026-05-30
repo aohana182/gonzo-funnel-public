@@ -2,7 +2,7 @@
 
 Weekly automated pipeline: finds VCs, researches them, scores against the Icegate thesis, writes outreach drafts. Output lands in Airtable. Nothing is sent automatically.
 
-**Status:** Live as of 2026-05-28. 102 tests passing. First real run pending.
+**Status:** Live. 39 VCs in Airtable, 2 drafts ready (OTF). 102 tests passing.
 
 ---
 
@@ -29,7 +29,7 @@ After a run, check Airtable. New VCs appear in VC_TABLE; qualifying drafts appea
 | Thing | Value |
 |---|---|
 | Scoring threshold | 17/25 — only VCs at or above this get drafts |
-| Cost per 10 VCs | ~$0.54 (Sonnet 4.6 via OpenRouter) |
+| Cost per 5 VCs | ~$0.21 (Sonnet 4.6 via OpenRouter, measured) |
 | Search rate limit | 1 req/sec — Brave free tier, automatically enforced |
 | Concurrency | 4 parallel VC pipelines |
 | Scorer cache | SQLite — repeated runs on the same VC cost $0 for scoring |
@@ -104,6 +104,14 @@ git push
 ```
 
 Never sync: `spec/`, `docs/PRD.md`, `docs/PLAN.md`, `memory.md`, `HANDOFF.md`.
+
+---
+
+## Pitfalls
+
+**ASCII-only in agent prompt strings.** Non-ASCII characters in Python source strings — `≤`, `≥`, `—`, `©`, etc. — cause `UnicodeEncodeError: 'charmap' codec` when the pipeline's stdout is redirected to a file on Windows (the terminal defaults to CP1252, not UTF-8). The error surfaces as a crashed VC in `result.errors`, not a visible crash. Use `<=`, `>=`, `--` in any string that ends up in an agent system prompt. Spec files are fine (read with `encoding='utf-8'`); the risk is in Python source.
+
+**Score variability on borderline candidates.** A VC that scores 16–17 on two consecutive runs is not a reliable go. Brave returns different search results each time, so the dossier content changes and the score swings by 3–4 points. Treat anything 15–18 as "worth a manual look" rather than a definitive go/no-go.
 
 ---
 
