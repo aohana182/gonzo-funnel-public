@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from agents.base import AgentError
-from agents.researcher import VCDossier, Citation
+from agents.researcher import VCDossier
 from agents.scorer import Score, ScoreDimension, ScorerAgent
 from llm.base import LLMResponse
 from observability.jsonl_logger import JsonlLogger
@@ -30,8 +30,6 @@ def _make_dossier(name="Accel"):
         stage_focus=["Seed"],
         ticket_size="$500K–$3M",
         partners=["Sonali De Rycker"],
-        score_preview="Strong thesis overlap.",
-        citations=[Citation(claim="Invests in deep tech", source_url="https://accel.com", quote="")],
         sources=["https://accel.com"],
     )
 

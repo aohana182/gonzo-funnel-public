@@ -165,7 +165,7 @@ async def run_pipeline(
             "score_breakdown": "\n".join(
                 f"{d.name}: {d.score}/5 — {d.rationale}" for d in score.dimensions
             ),
-            "dossier": f"{dossier.thesis_summary}\n\n{dossier.score_preview}",
+            "dossier": dossier.thesis_summary,
             "sources": "\n".join(dossier.sources),
             "status": "draft_ready" if score.go else "researched",
         }

@@ -11,12 +11,6 @@ _MAX_TOTAL_FETCH_URLS = 3
 _MAX_PAGE_CHARS = 4000
 
 
-class Citation(BaseModel):
-    claim: str
-    source_url: str
-    quote: str
-
-
 class VCDossier(BaseModel):
     name: str
     url: str
@@ -25,8 +19,6 @@ class VCDossier(BaseModel):
     stage_focus: list[str]
     ticket_size: str
     partners: list[str]
-    score_preview: str
-    citations: list[Citation]
     sources: list[str]
 
 
@@ -45,15 +37,21 @@ class ResearcherAgent(BaseAgent):
 
     def _build_system_prompt(self) -> str:
         company = read_spec("icegate.md")
-        thesis = read_spec("thesis.md")
         return (
             "You are a venture capital research analyst. Your task is to produce a factual dossier "
             "on a VC fund, based on the search results and page content provided.\n\n"
             f"## Company Seeking Funding\n{company}\n\n"
-            f"## Target Investor Profile\n{thesis}\n\n"
+            "## What to Look For\n"
+            "Gather verifiable evidence for these five areas:\n"
+            "1. Mandate fit — does the funder explicitly fund anti-censorship or circumvention tools?\n"
+            "2. Geographic reach — do they fund work serving users inside Russia, Iran, or China?\n"
+            "3. Technology vs. advocacy — do they pay for software engineering and infrastructure, "
+            "or only training, research, and advocacy?\n"
+            "4. Disbursement speed — do they have a rapid-response or rolling grant mechanism, "
+            "or only fixed annual cycles?\n"
+            "5. Grant size — what is the typical grant range?\n\n"
             "Rules:\n"
-            "- Every factual claim must have a Citation with the source URL.\n"
-            "- Max 1 direct quote per source, 15 words or fewer. All other claims must be paraphrased.\n"
+            "- Record every source URL used in the `sources` list.\n"
             "- If a field cannot be determined from the provided content, use an empty string or empty list.\n"
             "- Do not invent facts. Only use what is in the provided search results and page content.\n"
             "- Factual register only. No fluff. No em-dashes."

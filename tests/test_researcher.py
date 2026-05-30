@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, call, patch
 import pytest
 
 from agents.base import AgentError
-from agents.researcher import Citation, ResearcherAgent, VCDossier
+from agents.researcher import ResearcherAgent, VCDossier
 from agents.scout import ScoutCandidate
 from llm.base import LLMResponse
 from observability.jsonl_logger import JsonlLogger
@@ -44,8 +44,6 @@ def _valid_dossier_dict(name="Accel"):
         "stage_focus": ["Seed", "Series A"],
         "ticket_size": "$500K–$3M",
         "partners": ["Sonali De Rycker"],
-        "score_preview": "Strong thesis overlap with enterprise software.",
-        "citations": [{"claim": "Invests in deep tech", "source_url": "https://accel.com", "quote": ""}],
         "sources": ["https://accel.com"],
     }
 
