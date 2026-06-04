@@ -134,6 +134,12 @@ Google Sheet: 4 tabs
 
 ## Scripts
 
+**Windows (PowerShell) — run this first every session:**
+```powershell
+$env:Path = "C:\Users\avioh\.local\bin;$env:Path"
+cd C:\Users\avioh\gonzo-funnel
+```
+
 | Command | Description |
 |---|---|
 | `uv run python -m cli --limit 10` | Full pipeline run, up to 10 VCs |
@@ -146,6 +152,7 @@ Google Sheet: 4 tabs
 | `uv run python -m cli --push-run RUN_ID` | Push a saved results file to Airtable |
 | `uv run python -m cli --config-check` | Validate env config and exit |
 | `uv run python setup_airtable.py` | Verify Airtable schema |
+| `uv run python logs/dump_airtable.py` | Print current Airtable counts (total / GO / no-go) |
 | `uv run python sync_to_sheets.py` | Sync Airtable output to Google Sheet (4 tabs) |
 | `uv run python _migrate_ngo_tracker.py` | One-time: seed tracker tab with existing NGO/grant rows |
 | `uv run python -m pytest tests/ -q` | Run test suite |
