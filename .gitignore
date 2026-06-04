@@ -30,3 +30,5 @@ logs/
 *.sqlite
 memory.md
 HANDOFF.md
+dry_run_verbose.txt
+verbose_out.txt

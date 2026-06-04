@@ -41,15 +41,21 @@ All agent context lives in `spec/`. Fill these before running.
 | File | Contents | When to update |
 |---|---|---|
 | `spec/icegate.md` | Company overview, tech, market, team, the ask | When the pitch changes |
-| `spec/thesis.md` | Target VC profile + 5 scoring dimension definitions | When targeting criteria change |
-| `spec/exclusions.md` | VCs to skip -- already contacted, wrong fit | After each outreach wave |
+| `spec/thesis.md` | Angel investor scoring rubric (5 dimensions, go threshold) | When angel targeting criteria change |
+| `spec/thesis_vc.md` | VC fund scoring rubric (5 dimensions, go threshold) | When fund targeting criteria change |
+| `spec/exclusions.md` | Investors to skip -- already contacted, wrong fit | After each outreach wave |
 | `spec/bio.md` | Founder bio and voice rules for drafts | Rarely |
+
+The researcher infers `investor_type` ("angel" or "vc_fund") from evidence. The scorer
+automatically picks the matching rubric file. New projects: copy both thesis files and edit.
 
 ---
 
 ## Airtable schema
 
-**VC_TABLE** fields: `name`, `url`, `country`, `thesis_summary`, `stage_focus`, `ticket_size`, `partners`, `score`, `score_breakdown`, `status`, `last_updated`, `dossier`, `sources`, `notes`
+**VC_TABLE** fields: `name`, `investor_type`, `url`, `country`, `thesis_summary`, `stage_focus`, `ticket_size`, `partners`, `score`, `score_breakdown`, `status`, `last_updated`, `dossier`, `sources`, `notes`
+
+`investor_type` is a single-select field with values `angel` and `vc_fund`. Add it to your base before running.
 
 **DRAFTS** fields: `VC` (link to VC_TABLE), `partner_name`, `channel`, `subject`, `body`, `status`, `created`, `sent_at`
 
@@ -73,8 +79,43 @@ Run `uv run python setup_airtable.py` to verify your schema matches.
 | `MAX_COST_USD` | Optional per-run budget ceiling -- pipeline halts if exceeded |
 | `MAX_CONCURRENCY` | Parallel VC pipelines (default 4) |
 | `LANGFUSE_ENABLED` | `true` to enable Langfuse tracing (requires `LANGFUSE_HOST`, `_PUBLIC_KEY`, `_SECRET_KEY`) |
+| `GOOGLE_SHEETS_ID` | ID of the native Google Sheet used as the tracker working surface |
+| `GAS_WEBHOOK_URL` | Deployment URL of the Google Apps Script web app that writes to the Sheet |
+| `GAS_WEBHOOK_SECRET` | Secret token included in every POST to the GAS webhook |
 
 Copy `.env.example` and fill in values.
+
+---
+
+## Tracker (working surface)
+
+The pipeline writes to Airtable only. A separate sync script pushes pipeline output to a Google Sheet for operator use:
+
+```
+Airtable (pipeline DB, append-only)
+    |
+    v
+sync_to_sheets.py  --  reads Airtable, POSTs JSON to a Google Apps Script webhook
+    |
+    v
+Google Sheet: 4 tabs
+  targets    GO investors (score >= threshold), full detail. Replaced each sync.
+  tracker    Outreach log. New GO names appended; existing rows never touched.
+  no_go      Below-threshold records, summary only. Replaced each sync.
+  changelog  One row per run: date, counts.
+```
+
+**Auth:** The sync uses a Google Apps Script web app deployed inside the Sheet itself. GAS runs with the sheet owner's permissions -- no GCP project, no service account, no OAuth flow required.
+
+**Setup (one-time):**
+1. Open the Sheet -> Extensions -> Apps Script -> paste `gas_webhook.js` -> deploy as web app (Execute as: Me, Access: Anyone)
+2. Add `GAS_WEBHOOK_URL` and `GAS_WEBHOOK_SECRET` to `.env`
+3. Run `uv run python _migrate_ngo_tracker.py` to seed the tracker with any existing NGO/grant rows (skip if starting fresh)
+4. Run `uv run python sync_to_sheets.py`
+
+**Tracker tab** is a unified outreach log: NGO grant rows and angel investor rows coexist, distinguished by the `type` column. Columns: `Organization | Type | Tier | Score | Status | Date | Comments | Last Action`. New GO investors are appended on each sync; existing rows are never touched.
+
+**Rule:** Never add manual-tracking columns to Airtable. Airtable is append-only pipeline output; the Sheet is the operator's working surface.
 
 ---
 
@@ -105,6 +146,8 @@ Copy `.env.example` and fill in values.
 | `uv run python -m cli --push-run RUN_ID` | Push a saved results file to Airtable |
 | `uv run python -m cli --config-check` | Validate env config and exit |
 | `uv run python setup_airtable.py` | Verify Airtable schema |
+| `uv run python sync_to_sheets.py` | Sync Airtable output to Google Sheet (4 tabs) |
+| `uv run python _migrate_ngo_tracker.py` | One-time: seed tracker tab with existing NGO/grant rows |
 | `uv run python -m pytest tests/ -q` | Run test suite |
 
 ---
@@ -113,11 +156,24 @@ Copy `.env.example` and fill in values.
 
 | Metric | Value |
 |---|---|
-| Scoring threshold | 17/25 -- only VCs at or above this get drafts |
+| Scoring threshold | 17/25 (code enforced) -- only investors at or above this get drafts |
 | Cost per 5 VCs | ~$0.21 (Sonnet 4.6 via OpenRouter, measured) |
 | Search rate limit | 1 req/sec -- Brave free tier, enforced automatically |
 | Concurrency | 4 parallel VC pipelines |
 | Scorer cache | SQLite -- repeated runs on the same VC cost $0 for scoring |
+
+---
+
+## Design decisions (baked in, applies to all forks)
+
+**1. `investor_type` field is set by the researcher, not the operator.**
+The model infers from evidence whether the subject is an individual angel or a fund. This drives which scoring rubric is loaded (`thesis.md` vs `thesis_vc.md`) and which contact-discovery path the researcher follows. It also lets you filter the Airtable view by type. New projects: add both thesis files; the rest is automatic.
+
+**2. Scorer picks rubric per dossier, not per run.**
+A single run can produce a mixed batch (angels + funds). The scorer selects `thesis.md` or `thesis_vc.md` at score time based on `investor_type`. This is thread-safe: the system prompt is passed per-call via `BaseAgent._call(system=...)` rather than mutating shared state. Cache keys include a hash of the selected thesis, so changing either rubric auto-invalidates only the relevant entries.
+
+**3. Reachability is a first-class research output, not a post-processing step.**
+`contact_info` is a required field on `VCDossier`, populated by the researcher's 4th search query and 7th research area. Adding it as an afterthought requires a full `--refresh-older-than 0` re-run (~$2.60 for 53 records). Build it in from day one on any fork. Contact discovery differs by type: angels need LinkedIn/Twitter/email/AngelList; funds need partner LinkedIn, pitch form URL, and warm-intro path.
 
 ---
 
@@ -126,6 +182,8 @@ Copy `.env.example` and fill in values.
 **ASCII-only in agent prompt strings.** Non-ASCII characters in Python source strings (`<=`, `>=`, `--`, etc.) cause `UnicodeEncodeError: charmap codec` on Windows when stdout is redirected. Spec files are read with `encoding='utf-8'` and are safe; only Python source strings in agent prompts are at risk.
 
 **Score variability on borderline candidates.** A VC scoring 16-17 on two consecutive runs is not a reliable go. Brave returns different search results each time, so dossier content changes and scores swing 3-4 points. Treat 15-18 as "worth a manual look."
+
+**Add `investor_type` to Airtable before running.** The pipeline writes this field on every record. If the field is missing in your base, `uv run python setup_airtable.py` will report the mismatch. Add it as a single-select with options `angel` and `vc_fund`.
 
 ---
 
