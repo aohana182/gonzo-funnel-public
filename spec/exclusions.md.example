@@ -1,0 +1,13 @@
+# Exclusions
+
+Copy this file to `exclusions.md` and fill it in. The scout agent loads this file to filter candidates.
+
+---
+
+## VCs to never surface
+
+List one per line. Include any VC you have already contacted, that is a poor fit, or whose portfolio creates a conflict.
+
+- Example VC 1 — already in conversation
+- Example VC 2 — competitor investor
+- Example VC 3 — wrong geography

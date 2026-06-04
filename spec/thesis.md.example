@@ -1,0 +1,30 @@
+# Investment Thesis
+
+Copy this file to `thesis.md` and fill it in. The scout and scorer agents load this file.
+
+---
+
+## What a matching VC looks like
+
+[Describe the ideal investor: sector focus, stage, geography, check size, portfolio signals.]
+
+## Scoring dimensions (must match scorer agent — 5 dimensions, max 5 each = 25 total)
+
+### Thesis Fit (0–5)
+[Define what each score means for your sector/thesis alignment.]
+
+### Stage Fit (0–5)
+[Define what each score means for stage alignment — seed, pre-seed, Series A, etc.]
+
+### Ticket Fit (0–5)
+[Define what each score means for check size match.]
+
+### Geography (0–5)
+[Define what each score means for geography preference.]
+
+### Team Signal (0–5)
+[Define what each score means for team-investor fit.]
+
+## Go threshold
+
+Score >= 17/25 triggers outreach drafting.

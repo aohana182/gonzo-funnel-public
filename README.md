@@ -36,7 +36,7 @@ uv run python -m cli --dry-run --limit 5
 
 ## Spec files
 
-All agent context lives in `spec/`. Fill these before running.
+All agent context lives in `spec/`. These files are **not included in the repo** -- they contain your company and thesis details. Create them before running. Templates are in `spec/templates/`.
 
 | File | Contents | When to update |
 |---|---|---|
