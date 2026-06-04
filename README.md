@@ -40,7 +40,7 @@ All agent context lives in `spec/`. Fill these before running.
 
 | File | Contents | When to update |
 |---|---|---|
-| `spec/icegate.md` | Company overview, tech, market, team, the ask | When the pitch changes |
+| `spec/company.md` | Company overview, tech, market, team, the ask | When the pitch changes |
 | `spec/thesis.md` | Angel investor scoring rubric (5 dimensions, go threshold) | When angel targeting criteria change |
 | `spec/thesis_vc.md` | VC fund scoring rubric (5 dimensions, go threshold) | When fund targeting criteria change |
 | `spec/exclusions.md` | Investors to skip -- already contacted, wrong fit | After each outreach wave |
